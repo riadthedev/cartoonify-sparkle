@@ -31,6 +31,8 @@ export function useProcessImage(refreshInterval = 5000) {
           const imageId = data[0].id;
           
           try {
+            console.log('Calling process-image function for image:', imageId);
+            
             // Call the process-image function
             const response = await supabase.functions.invoke('process-image', {
               body: { imageId },
@@ -53,9 +55,26 @@ export function useProcessImage(refreshInterval = 5000) {
                 description: "There was a problem processing your image. You can try again from your dashboard.",
                 variant: "destructive",
               });
+            } else {
+              console.log('Process-image function completed successfully');
             }
           } catch (functionError) {
             console.error('Exception when calling process-image function:', functionError);
+            
+            // Update the status to error if an exception occurred
+            await supabase
+              .from('user_images')
+              .update({
+                status: 'error',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', imageId);
+              
+            toast({
+              title: "Processing Error",
+              description: "An unexpected error occurred. Please try again later.",
+              variant: "destructive",
+            });
           }
           
           if (isActive) {

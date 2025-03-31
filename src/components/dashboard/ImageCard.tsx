@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Download, Trash2, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
@@ -51,7 +50,7 @@ const ImageCard: React.FC<ImageCardProps> = ({
       });
       
       // Update the status back to 'in_queue'
-      await supabase
+      const { error: updateError } = await supabase
         .from('user_images')
         .update({
           status: 'in_queue',
@@ -59,26 +58,21 @@ const ImageCard: React.FC<ImageCardProps> = ({
         })
         .eq('id', image.id);
       
-      // Refresh images to show updated state
-      refreshImages();
-      
-      // Call the process-image function
-      const response = await supabase.functions.invoke('process-image', {
-        body: { imageId: image.id },
-      });
-      
-      if (response.error) {
-        console.error('Error starting image processing:', response.error);
+      if (updateError) {
+        console.error('Error updating image status:', updateError);
         toast({
           title: "Error",
-          description: "There was a problem starting the process. Please try again.",
+          description: "Failed to update image status. Please try again.",
           variant: "destructive",
         });
         return;
       }
       
+      // Refresh images to show updated state
+      refreshImages();
+      
       toast({
-        title: "Processing started",
+        title: "Processing restarted",
         description: "Your image is now in queue for processing.",
       });
     } catch (error) {
