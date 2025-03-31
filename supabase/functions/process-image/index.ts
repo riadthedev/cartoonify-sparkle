@@ -108,7 +108,7 @@ async function processWithGemini(imageResponse) {
   
   // Use the image generation model with the requested model name
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp-image-generation",
+    model: "gemini-2.0-flash",
   });
   
   // Get image data as bytes for Gemini
