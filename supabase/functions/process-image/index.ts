@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
@@ -106,9 +105,12 @@ async function processWithGemini(imageResponse) {
   // Initialize the Google Generative AI SDK
   const genAI = new GoogleGenerativeAI(geminiApiKey);
   
-  // Use the image generation model with the requested model name
+  // Use the experimental image generation model with generation config
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.0-flash-exp",
+    generationConfig: {
+      responseModalities: ["Text", "Image"]
+    }
   });
   
   // Get image data as bytes for Gemini
@@ -129,8 +131,8 @@ async function processWithGemini(imageResponse) {
     }
   };
   
-  // The text prompt
-  const textPart = "Transform this photo into a Studio Ghibli style cartoon.";
+  // The text prompt (adjusted for clarity)
+  const textPart = "Generate an image that is a Studio Ghibli style cartoon version of the provided photo.";
   
   // Generate content with the model
   const result = await model.generateContent([textPart, imagePart]);
