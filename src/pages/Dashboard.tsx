@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -373,9 +372,8 @@ const Dashboard: React.FC = () => {
                                     .eq('id', image.id);
                                   fetchImages();
                                 }}
-                                className="mb-4 w-full"
                               >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger className="w-full mb-4">
                                   <SelectValue placeholder="Select quality" />
                                 </SelectTrigger>
                                 <SelectContent>
