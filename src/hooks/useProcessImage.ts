@@ -33,7 +33,7 @@ export function useProcessImage(refreshInterval = 5000) {
           try {
             console.log('Calling process-image function for image:', imageId);
             
-            // Call the process-image function
+            // Call the process-image function with a simplified payload
             const response = await supabase.functions.invoke('process-image', {
               body: { imageId },
             });
