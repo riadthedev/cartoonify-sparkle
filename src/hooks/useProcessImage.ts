@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 export function useProcessImage(refreshInterval = 5000) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -15,6 +16,8 @@ export function useProcessImage(refreshInterval = 5000) {
       if (!isActive) return; // Prevent processing if component unmounted
       
       try {
+        setError(null);
+        
         // First check if there are any images in the 'in_queue' status
         const { data, error } = await supabase
           .from('user_images')
@@ -55,8 +58,14 @@ export function useProcessImage(refreshInterval = 5000) {
                 description: "There was a problem processing your image. You can try again from your dashboard.",
                 variant: "destructive",
               });
+              
+              setError('Failed to process image: ' + response.error.message);
             } else {
               console.log('Process-image function completed successfully');
+              toast({
+                title: "Image Processed",
+                description: "Your image has been successfully toonified!",
+              });
             }
           } catch (functionError) {
             console.error('Exception when calling process-image function:', functionError);
@@ -75,6 +84,9 @@ export function useProcessImage(refreshInterval = 5000) {
               description: "An unexpected error occurred. Please try again later.",
               variant: "destructive",
             });
+            
+            setError('Exception when processing image: ' + 
+              (functionError instanceof Error ? functionError.message : 'Unknown error'));
           }
           
           if (isActive) {
@@ -85,6 +97,8 @@ export function useProcessImage(refreshInterval = 5000) {
         console.error('Error checking for images to process:', error);
         if (isActive) {
           setIsProcessing(false);
+          setError('Error checking for images: ' + 
+            (error instanceof Error ? error.message : 'Unknown error'));
         }
       }
     };
@@ -101,5 +115,5 @@ export function useProcessImage(refreshInterval = 5000) {
     };
   }, [refreshInterval, toast]);
 
-  return { isProcessing };
+  return { isProcessing, error };
 }
