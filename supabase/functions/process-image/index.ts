@@ -19,17 +19,22 @@ const safeJsonParse = (text) => {
   }
 };
 
-// Helper function to convert ArrayBuffer to base64 in chunks
+// Helper function to convert ArrayBuffer to base64 processing each byte individually
 function arrayBufferToBase64(buffer) {
   let binary = '';
   const bytes = new Uint8Array(buffer);
   const len = bytes.byteLength;
   // Process in chunks to avoid call stack issues
   const chunkSize = 1024;
+  
   for (let i = 0; i < len; i += chunkSize) {
-    const chunk = bytes.slice(i, Math.min(i + chunkSize, len));
-    binary += String.fromCharCode.apply(null, chunk);
+    const end = Math.min(i + chunkSize, len);
+    // Process each byte individually to avoid "Maximum call stack size exceeded" error
+    for (let j = i; j < end; j++) {
+      binary += String.fromCharCode(bytes[j]);
+    }
   }
+  
   return btoa(binary);
 }
 
@@ -109,7 +114,7 @@ async function processWithGemini(imageResponse) {
   // Get image data as bytes for Gemini
   const imageBytes = await imageResponse.arrayBuffer();
   
-  // FIX: Use the chunked conversion function instead of spreading a large array
+  // Use the optimized byte-by-byte base64 conversion
   const base64Image = arrayBufferToBase64(imageBytes);
   
   const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
