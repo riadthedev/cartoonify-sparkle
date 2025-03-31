@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Upload, ImagePlus, CheckCircle, Clock, AlertCircle, Download, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
-// Mock data for the user's images
 const mockImages = [
   { 
     id: 1, 
@@ -41,7 +39,6 @@ const Dashboard: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setIsUploading(true);
       
-      // Simulate file upload
       setTimeout(() => {
         setIsUploading(false);
         const newImage = {
@@ -63,20 +60,16 @@ const Dashboard: React.FC = () => {
   };
 
   const handleToonifyClick = (id: number) => {
-    // In a real app, this would redirect to Stripe payment
-    // For demo purposes, we'll just update the status
     toast({
       title: "Redirecting to payment",
       description: "You'll be redirected to the payment page.",
     });
     
-    // Simulate status change after "payment"
     setTimeout(() => {
       setImages(images.map(img => 
         img.id === id ? { ...img, status: 'in_queue' } : img
       ));
       
-      // And then simulate the process completing
       setTimeout(() => {
         setImages(images.map(img => 
           img.id === id ? { 
@@ -96,7 +89,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <NavBar isLoggedIn={true} />
+      <NavBar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">

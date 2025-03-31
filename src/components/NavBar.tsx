@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Menu, X, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
+// We don't need the isLoggedIn prop anymore as we use the useAuth hook
 const NavBar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
