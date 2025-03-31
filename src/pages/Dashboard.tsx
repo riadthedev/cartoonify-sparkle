@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -103,7 +102,6 @@ const Dashboard: React.FC = () => {
     setIsUploading(true);
     
     try {
-      // Convert base64 string to a file-like object
       const base64Response = await fetch(imageData);
       const blob = await base64Response.blob();
       const file = new File([blob], 'upload.jpg', { type: 'image/jpeg' });
@@ -155,11 +153,21 @@ const Dashboard: React.FC = () => {
 
   const handleToonifyClick = async (imageId: string, qualityLevel: string) => {
     try {
+      console.log('Starting checkout process for image:', imageId, 'with quality:', qualityLevel);
+      console.log('Using Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           imageId,
@@ -168,26 +176,38 @@ const Dashboard: React.FC = () => {
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
       }
       
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        console.log('Raw response:', await response.text());
+        throw new Error('Invalid response from server');
       }
+      
+      console.log('Checkout session created successfully:', data);
       
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout URL returned from server');
       }
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
         title: "Payment error",
-        description: "There was a problem initiating payment. Please try again later.",
+        description: `There was a problem initiating payment: ${error.message}. Please try again later.`,
         variant: "destructive",
       });
     }

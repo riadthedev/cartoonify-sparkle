@@ -20,15 +20,30 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const regularPriceId = Deno.env.get('STRIPE_REGULAR_PRICE_ID');
+    const premiumPriceId = Deno.env.get('STRIPE_PREMIUM_PRICE_ID');
+    
+    // Log environment variables (without exposing sensitive keys)
+    console.log('Environment variables:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseAnonKey: !!supabaseAnonKey,
+      hasStripeSecretKey: !!stripeSecretKey,
+      hasRegularPriceId: !!regularPriceId,
+      hasPremiumPriceId: !!premiumPriceId
+    });
     
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase configuration:', { 
-        hasUrl: !!supabaseUrl, 
-        hasAnonKey: !!supabaseAnonKey 
-      });
+      console.error('Missing Supabase configuration');
       throw new Error('Supabase configuration is missing');
     }
     
+    if (!stripeSecretKey) {
+      console.error('Missing Stripe configuration');
+      throw new Error('Stripe configuration is missing');
+    }
+    
+    // Create Supabase client
     const supabaseClient = createClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -52,9 +67,18 @@ serve(async (req) => {
     
     console.log('Authenticated user:', { id: user.id, email: user.email });
     
-    // Get request data
-    const requestData = await req.json();
-    console.log('Request data:', requestData);
+    // Parse request data
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log('Request data:', requestData);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
     
     const { imageId, qualityLevel } = requestData;
 
@@ -71,12 +95,20 @@ serve(async (req) => {
       .from('user_images')
       .select('*')
       .eq('id', imageId)
-      .single();
+      .maybeSingle();
     
-    if (imageError || !imageData) {
-      console.error('Image not found:', { error: imageError, imageId });
+    if (imageError) {
+      console.error('Error fetching image data:', imageError);
       return new Response(
-        JSON.stringify({ error: 'Image not found', details: imageError }),
+        JSON.stringify({ error: 'Failed to fetch image data', details: imageError }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+    
+    if (!imageData) {
+      console.error('Image not found:', { imageId });
+      return new Response(
+        JSON.stringify({ error: 'Image not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
@@ -84,24 +116,6 @@ serve(async (req) => {
     console.log('Found image:', { id: imageData.id, status: imageData.status });
     
     // Set up Stripe
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const regularPriceId = Deno.env.get('STRIPE_REGULAR_PRICE_ID');
-    const premiumPriceId = Deno.env.get('STRIPE_PREMIUM_PRICE_ID');
-    
-    console.log('Stripe configuration:', { 
-      hasSecretKey: !!stripeSecretKey,
-      hasRegularPriceId: !!regularPriceId,
-      hasPremiumPriceId: !!premiumPriceId,
-    });
-    
-    if (!stripeSecretKey) {
-      console.error('STRIPE_SECRET_KEY is not configured');
-      return new Response(
-        JSON.stringify({ error: 'Stripe is not configured properly - missing secret key' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-    
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
@@ -117,7 +131,7 @@ serve(async (req) => {
       );
     }
     
-    const originUrl = req.headers.get('origin');
+    const originUrl = req.headers.get('origin') || 'https://your-app-fallback-url.com';
     console.log('Creating checkout session with:', { 
       priceId, 
       imageId, 
@@ -181,8 +195,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Unhandled server error', 
-        message: error.message || 'Unknown error',
-        stack: error.stack
+        message: error.message || 'Unknown error'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
