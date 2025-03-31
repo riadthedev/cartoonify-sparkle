@@ -81,8 +81,8 @@ The result should look like a high-quality 2D animation cell that could appear i
 
     console.log('Sending request to Gemini API');
     
-    // Using the 2.0-flash model as requested
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+    // Using the gemini-2.0-flash-exp-image-generation model as requested
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
