@@ -167,17 +167,27 @@ const Dashboard: React.FC = () => {
         }),
       });
       
-      const { url, error } = await response.json();
-      
-      if (error) throw new Error(error);
-      if (url) {
-        window.location.href = url;
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+      
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
         title: "Payment error",
-        description: "There was a problem initiating payment.",
+        description: "There was a problem initiating payment. Please try again later.",
         variant: "destructive",
       });
     }
