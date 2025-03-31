@@ -1,9 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 export function useProcessImage(refreshInterval = 5000) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     let interval: number | undefined;
@@ -28,21 +30,32 @@ export function useProcessImage(refreshInterval = 5000) {
           
           const imageId = data[0].id;
           
-          // Call the process-image function
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-image`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-            body: JSON.stringify({ imageId }),
-          });
-          
-          if (!response.ok && isActive) {
-            const result = await response.json();
-            if (result.error) {
-              console.error('Processing error:', result.error);
+          try {
+            // Call the process-image function
+            const response = await supabase.functions.invoke('process-image', {
+              body: { imageId },
+            });
+            
+            if (response.error) {
+              console.error('Error invoking process-image function:', response.error);
+              
+              // Update the status to error if the function call failed
+              await supabase
+                .from('user_images')
+                .update({
+                  status: 'error',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', imageId);
+                
+              toast({
+                title: "Processing Error",
+                description: "There was a problem processing your image. You can try again from your dashboard.",
+                variant: "destructive",
+              });
             }
+          } catch (functionError) {
+            console.error('Exception when calling process-image function:', functionError);
           }
           
           if (isActive) {
@@ -67,7 +80,7 @@ export function useProcessImage(refreshInterval = 5000) {
         window.clearInterval(interval);
       }
     };
-  }, [refreshInterval]);
+  }, [refreshInterval, toast]);
 
   return { isProcessing };
 }

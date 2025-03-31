@@ -45,6 +45,11 @@ const ImageCard: React.FC<ImageCardProps> = ({
 
   const handleRetry = async () => {
     try {
+      toast({
+        title: "Restarting processing",
+        description: "Preparing your image for processing...",
+      });
+      
       // Update the status back to 'in_queue'
       await supabase
         .from('user_images')
@@ -54,30 +59,28 @@ const ImageCard: React.FC<ImageCardProps> = ({
         })
         .eq('id', image.id);
       
-      // Call the process-image function
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      
-      if (!accessToken) {
-        throw new Error('Authentication required. Please log in again.');
-      }
-      
-      toast({
-        title: "Processing restarted",
-        description: "Your image is now in queue for processing again.",
-      });
-      
-      // Refresh images
+      // Refresh images to show updated state
       refreshImages();
       
-      // Call process-image function
+      // Call the process-image function
       const response = await supabase.functions.invoke('process-image', {
         body: { imageId: image.id },
       });
       
       if (response.error) {
         console.error('Error starting image processing:', response.error);
+        toast({
+          title: "Error",
+          description: "There was a problem starting the process. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
+      
+      toast({
+        title: "Processing started",
+        description: "Your image is now in queue for processing.",
+      });
     } catch (error) {
       console.error('Error retrying image processing:', error);
       toast({
