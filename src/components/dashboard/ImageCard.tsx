@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Download, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from '@/integrations/supabase/client';
+import { Progress } from '@/components/ui/progress';
 
 interface ImageCardProps {
   image: any;
@@ -26,6 +27,8 @@ const ImageCard: React.FC<ImageCardProps> = ({
         return { icon: <CheckCircle className="h-5 w-5 text-green-500 mr-2" />, text: 'Complete' };
       case 'in_queue':
         return { icon: <Clock className="h-5 w-5 text-yellow-500 mr-2" />, text: 'Processing' };
+      case 'processing':
+        return { icon: <Clock className="h-5 w-5 text-yellow-500 mr-2" />, text: 'Generating' };
       case 'not_toonified':
         return { icon: <AlertCircle className="h-5 w-5 text-gray-400 mr-2" />, text: 'Not Toonified' };
       case 'pending_payment':
@@ -57,7 +60,19 @@ const ImageCard: React.FC<ImageCardProps> = ({
         
         <div className="flex">
           {image.status === 'complete' && (
-            <Button size="sm" variant="ghost" className="text-toonify-cyan hover:text-toonify-blue">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="text-toonify-cyan hover:text-toonify-blue"
+              onClick={() => {
+                const a = document.createElement('a');
+                a.href = image.toonified_image_path;
+                a.download = `toonified-image-${image.id}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+            >
               <Download className="h-4 w-4" />
             </Button>
           )}
@@ -91,13 +106,19 @@ const ImageCard: React.FC<ImageCardProps> = ({
         </div>
       ) : (
         <div className="rounded-xl border-2 border-dashed border-white/10 flex items-center justify-center aspect-square bg-white/5">
-          {image.status === 'in_queue' ? (
-            <div className="text-center p-4">
-              <div className="mb-2">
-                <Sparkles className="h-8 w-8 text-toonify-pink" />
+          {image.status === 'in_queue' || image.status === 'processing' ? (
+            <div className="text-center p-4 w-full">
+              <div className="mb-4">
+                <Sparkles className="h-8 w-8 text-toonify-pink mx-auto animate-pulse" />
               </div>
-              <p className="text-gray-300">Processing your image...</p>
-              <p className="text-xs text-gray-400 mt-1">This may take a minute</p>
+              <p className="text-gray-300 mb-3">
+                {image.status === 'in_queue' ? 'Processing your image...' : 'Generating toonified version...'}
+              </p>
+              <Progress 
+                value={image.status === 'in_queue' ? 30 : 70} 
+                className="h-2 bg-white/10" 
+              />
+              <p className="text-xs text-gray-400 mt-2">This may take a minute</p>
             </div>
           ) : (
             <div className="text-center w-full p-4">
