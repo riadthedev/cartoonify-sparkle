@@ -75,7 +75,8 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
     
-    const toonifyPrompt = `Create a cartoon version of this photo in a Studio Ghibli style. The new image should maintain the same composition and framing as the original, but with a hand-drawn animation look.`;
+    // Simplified prompt for better Gemini performance
+    const toonifyPrompt = `Transform this photo into a Studio Ghibli style cartoon. Keep the same composition but make it look hand-drawn.`;
 
     console.log('Sending request to Gemini API with model: gemini-2.0-flash-exp-image-generation');
     
@@ -109,19 +110,47 @@ serve(async (req) => {
       })
     });
     
+    // Detailed error handling for Gemini API
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
+      console.error('Gemini API error response:', errorText);
+      
+      // Try to parse the error message for more details
+      try {
+        const errorJson = JSON.parse(errorText);
+        const errorMessage = errorJson.error?.message || 'Unknown Gemini API error';
+        const errorCode = errorJson.error?.code || 0;
+        
+        console.error(`Gemini API error code: ${errorCode}, message: ${errorMessage}`);
+        throw new Error(`Gemini API error: ${errorMessage} (code: ${errorCode})`);
+      } catch (parseError) {
+        // If we can't parse the JSON, just use the status
+        throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
+      }
     }
     
     const generationResult = await geminiResponse.json();
     console.log('Received response from Gemini API');
     
-    // Extract the generated image
-    if (!generationResult || !generationResult.candidates || !generationResult.candidates[0]?.content?.parts) {
-      console.error('Invalid response structure from Gemini API:', JSON.stringify(generationResult));
-      throw new Error('Invalid response from Gemini API');
+    // Detailed validation and logging of the response structure
+    if (!generationResult) {
+      console.error('Empty response from Gemini API');
+      throw new Error('Empty response from Gemini API');
+    }
+    
+    if (!generationResult.candidates || generationResult.candidates.length === 0) {
+      console.error('No candidates in Gemini API response:', JSON.stringify(generationResult));
+      throw new Error('No image candidates returned from Gemini API');
+    }
+    
+    if (!generationResult.candidates[0]?.content) {
+      console.error('No content in first candidate:', JSON.stringify(generationResult.candidates[0]));
+      throw new Error('Invalid candidate structure from Gemini API');
+    }
+    
+    if (!generationResult.candidates[0].content.parts || generationResult.candidates[0].content.parts.length === 0) {
+      console.error('No parts in candidate content:', JSON.stringify(generationResult.candidates[0].content));
+      throw new Error('No content parts in Gemini API response');
     }
     
     // Debug log to understand response structure
@@ -140,6 +169,7 @@ serve(async (req) => {
       };
     }));
     
+    // Find the generated image part
     const generatedImage = parts.find(
       part => part.inline_data && part.inline_data.mime_type.startsWith('image/')
     );
