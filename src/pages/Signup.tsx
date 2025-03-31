@@ -4,17 +4,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
 
-const Login: React.FC = () => {
+const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading, user } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const { signup, isLoading, user } = useAuth();
   const navigate = useNavigate();
-
+  
   useEffect(() => {
     // Redirect to dashboard if user is already logged in
     if (user) {
@@ -22,9 +24,27 @@ const Login: React.FC = () => {
     }
   }, [user, navigate]);
 
+  const validatePassword = () => {
+    if (password !== confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    setPasswordError('');
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
+    
+    if (!validatePassword()) return;
+    
+    await signup(email, password);
   };
 
   return (
@@ -34,10 +54,10 @@ const Login: React.FC = () => {
       <main className="flex-grow flex items-center justify-center py-12">
         <div className="w-full max-w-md px-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-toonify-blue to-toonify-purple bg-clip-text text-transparent">
-              Welcome Back
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-toonify-cyan to-toonify-blue bg-clip-text text-transparent">
+              Create an Account
             </h1>
-            <p className="text-gray-400 mt-2">Sign in to access your dashboard</p>
+            <p className="text-gray-400 mt-2">Sign up to get started with Toonify</p>
           </div>
 
           <div className="bg-toonify-dark-navy/70 rounded-2xl p-8 backdrop-blur-sm border border-white/10 shadow-xl">
@@ -59,12 +79,7 @@ const Login: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="password" className="text-gray-300">Password</Label>
-                  <Link to="/forgot-password" className="text-sm text-toonify-blue hover:text-toonify-cyan transition-colors">
-                    Forgot password?
-                  </Link>
-                </div>
+                <Label htmlFor="password" className="text-gray-300">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
@@ -78,23 +93,42 @@ const Login: React.FC = () => {
                   />
                 </div>
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-gray-300">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 bg-toonify-navy/50 border-white/10"
+                    required
+                  />
+                </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm">{passwordError}</p>
+                )}
+              </div>
 
               <Button 
                 type="submit" 
-                className="w-full gradient-border purple-pink-gradient"
+                className="w-full gradient-border blue-cyan-gradient"
                 disabled={isLoading}
                 variant="outline"
               >
-                {isLoading ? "Signing in..." : "Sign In"}
-                {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                {isLoading ? "Creating Account..." : "Create Account"}
+                {!isLoading && <UserPlus className="ml-2 h-4 w-4" />}
               </Button>
             </form>
 
             <div className="mt-8 text-center">
               <p className="text-gray-400">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-toonify-blue hover:text-toonify-cyan transition-colors">
-                  Sign up
+                Already have an account?{" "}
+                <Link to="/login" className="text-toonify-blue hover:text-toonify-cyan transition-colors">
+                  Sign in
                 </Link>
               </p>
             </div>
@@ -107,4 +141,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default Signup;

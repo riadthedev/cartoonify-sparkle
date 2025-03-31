@@ -2,14 +2,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Menu, X, User } from 'lucide-react';
+import { Sparkles, Menu, X, User, LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
-interface NavBarProps {
-  isLoggedIn?: boolean;
-}
-
-const NavBar: React.FC<NavBarProps> = ({ isLoggedIn = false }) => {
+const NavBar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-toonify-navy/80 backdrop-blur-md border-white/10">
@@ -35,24 +33,40 @@ const NavBar: React.FC<NavBarProps> = ({ isLoggedIn = false }) => {
             Pricing
           </Link>
           
-          {isLoggedIn ? (
-            <Link to="/dashboard">
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <Link to="/dashboard">
+                <Button 
+                  className="gradient-border blue-cyan-gradient"
+                  variant="outline"
+                >
+                  <User className="mr-2 h-4 w-4" /> Dashboard
+                </Button>
+              </Link>
               <Button 
-                className="gradient-border blue-cyan-gradient"
-                variant="outline"
+                onClick={() => logout()}
+                variant="ghost" 
+                className="text-gray-300 hover:text-white"
               >
-                <User className="mr-2 h-4 w-4" /> Dashboard
+                <LogOut className="h-4 w-4 mr-2" /> Logout
               </Button>
-            </Link>
+            </div>
           ) : (
-            <Link to="/login">
-              <Button 
-                className="gradient-border purple-pink-gradient"
-                variant="outline"
-              >
-                Sign In
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link to="/login">
+                <Button 
+                  className="gradient-border purple-pink-gradient"
+                  variant="outline"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button variant="ghost" className="text-gray-300 hover:text-white">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
           )}
         </nav>
 
@@ -91,24 +105,43 @@ const NavBar: React.FC<NavBarProps> = ({ isLoggedIn = false }) => {
               Pricing
             </Link>
             
-            {isLoggedIn ? (
-              <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+            {user ? (
+              <>
+                <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                  <Button 
+                    className="gradient-border blue-cyan-gradient w-full"
+                    variant="outline"
+                  >
+                    <User className="mr-2 h-4 w-4" /> Dashboard
+                  </Button>
+                </Link>
                 <Button 
-                  className="gradient-border blue-cyan-gradient w-full"
-                  variant="outline"
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                  variant="ghost" 
+                  className="text-gray-300 hover:text-white w-full"
                 >
-                  <User className="mr-2 h-4 w-4" /> Dashboard
+                  <LogOut className="h-4 w-4 mr-2" /> Logout
                 </Button>
-              </Link>
+              </>
             ) : (
-              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                <Button 
-                  className="gradient-border purple-pink-gradient w-full"
-                  variant="outline"
-                >
-                  Sign In
-                </Button>
-              </Link>
+              <>
+                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                  <Button 
+                    className="gradient-border purple-pink-gradient w-full"
+                    variant="outline"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" className="text-gray-300 hover:text-white w-full">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
             )}
           </nav>
         </div>
