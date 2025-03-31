@@ -6,7 +6,7 @@ export function useProcessImage(refreshInterval = 5000) {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    let interval: number;
+    let interval: NodeJS.Timeout;
 
     const checkAndProcessImages = async () => {
       try {
@@ -52,7 +52,7 @@ export function useProcessImage(refreshInterval = 5000) {
 
     // Start polling
     checkAndProcessImages();
-    interval = setInterval(checkAndProcessImages, refreshInterval) as unknown as number;
+    interval = setInterval(checkAndProcessImages, refreshInterval);
 
     return () => {
       clearInterval(interval);
