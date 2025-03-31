@@ -1,92 +1,42 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 230 57% 15%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 220 65% 13%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 230 57% 15%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 213 100% 65%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 319 100% 65%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 213 27% 25%;
+    --muted-foreground: 215 20% 80%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 263 100% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 213 27% 30%;
+    --input: 213 27% 22%;
+    --ring: 213 100% 65%;
+
+    --radius: 0.75rem;
+    --font-poppins: 'Poppins', sans-serif;
   }
 }
 
@@ -94,8 +44,94 @@
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-toonify-navy text-foreground font-sans;
   }
+
+  /* Ensure the root div takes the full height */
+  #root {
+    @apply min-h-screen w-full;
+  }
+
+  /* Remove the centered and padding styles from App.css */
+  #root {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+  }
+}
+
+@layer components {
+  .gradient-border {
+    position: relative;
+    border-radius: 9999px;
+    overflow: hidden;
+    z-index: 1;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    z-index: -1;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--start-color), var(--end-color));
+  }
+
+  .blue-cyan-gradient::before {
+    --start-color: #4F7CFF;
+    --end-color: #2CE5F6;
+  }
+
+  .purple-pink-gradient::before {
+    --start-color: #8A4FFF;
+    --end-color: #FF4FC0;
+  }
+
+  .red-orange-gradient::before {
+    --start-color: #FF4F4F;
+    --end-color: #FF6B4F;
+  }
+
+  .gradient-border:hover {
+    transform: translateY(-2px);
+    transition: transform 0.3s ease;
+  }
+
+  .gradient-border:hover::before {
+    animation: rotate 2s linear infinite;
+  }
+
+  .drop-zone {
+    @apply border-2 border-dashed border-toonify-blue/40 rounded-3xl p-8 cursor-pointer 
+    transition-all duration-300 flex flex-col items-center justify-center text-center;
+  }
+
+  .drop-zone:hover {
+    @apply border-toonify-blue/80 bg-white/5;
+  }
+
+  .drop-zone.active {
+    @apply border-toonify-cyan bg-white/10;
+  }
+
+  .cartoon-card {
+    @apply rounded-2xl bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-6 
+    backdrop-blur-sm border border-white/10 transition duration-300;
+  }
+
+  .cartoon-card:hover {
+    @apply shadow-xl border-white/20 transform -translate-y-1;
+  }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
