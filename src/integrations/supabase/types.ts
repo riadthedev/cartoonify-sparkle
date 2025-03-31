@@ -30,6 +30,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_images: {
+        Row: {
+          created_at: string
+          id: string
+          original_image_path: string
+          quality_level: string
+          status: string
+          stripe_payment_status: string | null
+          stripe_session_id: string | null
+          toonified_image_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_image_path: string
+          quality_level: string
+          status?: string
+          stripe_payment_status?: string | null
+          stripe_session_id?: string | null
+          toonified_image_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_image_path?: string
+          quality_level?: string
+          status?: string
+          stripe_payment_status?: string | null
+          stripe_session_id?: string | null
+          toonified_image_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
