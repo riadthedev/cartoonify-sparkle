@@ -11,6 +11,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
   
@@ -35,12 +36,18 @@ serve(async (req) => {
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase configuration');
-      throw new Error('Supabase configuration is missing');
+      return new Response(
+        JSON.stringify({ error: 'Supabase configuration is missing' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
     
     if (!stripeSecretKey) {
       console.error('Missing Stripe configuration');
-      throw new Error('Stripe configuration is missing');
+      return new Response(
+        JSON.stringify({ error: 'Stripe configuration is missing' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
     
     // Create Supabase client
@@ -70,12 +77,23 @@ serve(async (req) => {
     // Parse request data
     let requestData;
     try {
-      requestData = await req.json();
-      console.log('Request data:', requestData);
+      const bodyText = await req.text();
+      console.log('Raw request body:', bodyText);
+      
+      try {
+        requestData = JSON.parse(bodyText);
+        console.log('Parsed request data:', requestData);
+      } catch (jsonError) {
+        console.error('Failed to parse JSON:', jsonError, 'Body was:', bodyText);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
     } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
+      console.error('Failed to read request body:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid request body' }),
+        JSON.stringify({ error: 'Failed to read request body' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -116,9 +134,19 @@ serve(async (req) => {
     console.log('Found image:', { id: imageData.id, status: imageData.status });
     
     // Set up Stripe
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
+    let stripe;
+    try {
+      stripe = new Stripe(stripeSecretKey, {
+        apiVersion: '2023-10-16',
+      });
+      console.log('Stripe client initialized successfully');
+    } catch (stripeInitError) {
+      console.error('Error initializing Stripe client:', stripeInitError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to initialize Stripe client' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
     
     // Set price based on quality level
     const priceId = qualityLevel === 'premium' ? premiumPriceId : regularPriceId;

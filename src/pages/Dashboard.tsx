@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -154,7 +155,14 @@ const Dashboard: React.FC = () => {
   const handleToonifyClick = async (imageId: string, qualityLevel: string) => {
     try {
       console.log('Starting checkout process for image:', imageId, 'with quality:', qualityLevel);
-      console.log('Using Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      
+      // Check if VITE_SUPABASE_URL is defined
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      console.log('Using Supabase URL:', supabaseUrl);
+      
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not defined. Check your environment variables.');
+      }
       
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
@@ -163,7 +171,7 @@ const Dashboard: React.FC = () => {
         throw new Error('Authentication required. Please log in again.');
       }
       
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,25 +184,27 @@ const Dashboard: React.FC = () => {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorData = await response.text();
         console.error('Server response error:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          body: errorData
         });
         
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        // Try to parse as JSON if possible
+        let errorMessage;
+        try {
+          const errorJson = JSON.parse(errorData);
+          errorMessage = errorJson.error || errorJson.message || `Server responded with ${response.status}: ${response.statusText}`;
+        } catch (parseError) {
+          // If not JSON, use the text directly
+          errorMessage = `Server responded with ${response.status}: ${response.statusText}. Response was not valid JSON.`;
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        console.log('Raw response:', await response.text());
-        throw new Error('Invalid response from server');
-      }
-      
+      const data = await response.json();
       console.log('Checkout session created successfully:', data);
       
       if (data.url) {
