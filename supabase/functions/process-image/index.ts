@@ -106,9 +106,9 @@ async function processWithGemini(imageResponse) {
   // Initialize the Google Generative AI SDK
   const genAI = new GoogleGenerativeAI(geminiApiKey);
   
-  // Use the correct model name
+  // Use the image generation model with the requested model name
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-2.0-flash-exp-image-generation",
   });
   
   // Get image data as bytes for Gemini
