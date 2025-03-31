@@ -22,6 +22,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    
+    // Get price IDs from environment variables
     const regularPriceId = Deno.env.get('STRIPE_REGULAR_PRICE_ID');
     const premiumPriceId = Deno.env.get('STRIPE_PREMIUM_PRICE_ID');
     
@@ -46,6 +48,14 @@ serve(async (req) => {
       console.error('Missing Stripe configuration');
       return new Response(
         JSON.stringify({ error: 'Stripe configuration is missing' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+    
+    if (!regularPriceId || !premiumPriceId) {
+      console.error('Missing Stripe price IDs');
+      return new Response(
+        JSON.stringify({ error: 'Stripe price IDs are missing from environment variables' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -150,14 +160,6 @@ serve(async (req) => {
     
     // Set price based on quality level
     const priceId = qualityLevel === 'premium' ? premiumPriceId : regularPriceId;
-    
-    if (!priceId) {
-      console.error('Price ID not configured:', qualityLevel === 'premium' ? 'STRIPE_PREMIUM_PRICE_ID' : 'STRIPE_REGULAR_PRICE_ID');
-      return new Response(
-        JSON.stringify({ error: 'Price ID not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
     
     const originUrl = req.headers.get('origin') || 'https://your-app-fallback-url.com';
     console.log('Creating checkout session with:', { 
