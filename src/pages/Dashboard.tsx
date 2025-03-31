@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -244,24 +245,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-400">Manage your toonified images</p>
           </div>
           
-          <div className="mt-4 md:mt-0 flex flex-col md:flex-row items-center gap-4">
-            <div className="w-full md:w-auto">
-              <RadioGroup 
-                value={selectedQuality} 
-                onValueChange={setSelectedQuality}
-                className="grid grid-cols-2 gap-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="regular" id="regular" />
-                  <Label htmlFor="regular">Regular ($2)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="premium" id="premium" />
-                  <Label htmlFor="premium">Premium ($10)</Label>
-                </div>
-              </RadioGroup>
-            </div>
-            
+          <div className="mt-4 md:mt-0">
             <input
               type="file"
               id="upload-image"
@@ -376,13 +360,39 @@ const Dashboard: React.FC = () => {
                           <p className="text-xs text-gray-400 mt-1">This may take a minute</p>
                         </div>
                       ) : (
-                        <Button 
-                          className="gradient-border purple-pink-gradient"
-                          variant="outline"
-                          onClick={() => handleToonifyClick(image.id, image.quality_level)}
-                        >
-                          <Sparkles className="mr-2 h-4 w-4" /> Toonify Now
-                        </Button>
+                        <div className="text-center w-full p-4">
+                          {image.status === 'not_toonified' && (
+                            <>
+                              <p className="mb-4 text-gray-300">Select quality level:</p>
+                              <Select 
+                                value={image.quality_level} 
+                                onValueChange={async (value) => {
+                                  await supabase
+                                    .from('user_images')
+                                    .update({ quality_level: value })
+                                    .eq('id', image.id);
+                                  fetchImages();
+                                }}
+                                className="mb-4 w-full"
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select quality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="regular">Regular ($2)</SelectItem>
+                                  <SelectItem value="premium">Premium ($10)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </>
+                          )}
+                          <Button 
+                            className="gradient-border purple-pink-gradient w-full"
+                            variant="outline"
+                            onClick={() => handleToonifyClick(image.id, image.quality_level)}
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" /> Toonify Now
+                          </Button>
+                        </div>
                       )}
                     </div>
                   )}
