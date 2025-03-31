@@ -68,11 +68,11 @@ export const usePaymentSuccess = ({ fetchImages }: PaymentSuccessProps) => {
           });
         }
         
-        // Clear the URL parameters
+        // Clean up the URL parameters AFTER processing is complete
         window.history.replaceState({}, document.title, '/dashboard');
       };
       
       updatePaymentStatus();
     }
-  }, [location, toast, fetchImages]);
+  }, [location.search]); // Only run when the URL search parameters change
 };

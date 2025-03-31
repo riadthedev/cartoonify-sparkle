@@ -39,7 +39,11 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (!isProcessing && user) {
-      fetchImages();
+      const timer = setTimeout(() => {
+        fetchImages();
+      }, 2000); // Debounce image refresh to prevent too frequent updates
+      
+      return () => clearTimeout(timer);
     }
   }, [isProcessing, user]);
 

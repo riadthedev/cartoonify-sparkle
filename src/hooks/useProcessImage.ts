@@ -7,8 +7,11 @@ export function useProcessImage(refreshInterval = 5000) {
 
   useEffect(() => {
     let interval: number | undefined;
+    let isActive = true; // For cleanup
 
     const checkAndProcessImages = async () => {
+      if (!isActive) return; // Prevent processing if component unmounted
+      
       try {
         // First check if there are any images in the 'in_queue' status
         const { data, error } = await supabase
@@ -20,7 +23,7 @@ export function useProcessImage(refreshInterval = 5000) {
         if (error) throw error;
         
         // If there are images to process, process them
-        if (data && data.length > 0) {
+        if (data && data.length > 0 && isActive) {
           setIsProcessing(true);
           
           const imageId = data[0].id;
@@ -35,18 +38,22 @@ export function useProcessImage(refreshInterval = 5000) {
             body: JSON.stringify({ imageId }),
           });
           
-          if (!response.ok) {
+          if (!response.ok && isActive) {
             const result = await response.json();
             if (result.error) {
               console.error('Processing error:', result.error);
             }
           }
           
-          setIsProcessing(false);
+          if (isActive) {
+            setIsProcessing(false);
+          }
         }
       } catch (error) {
         console.error('Error checking for images to process:', error);
-        setIsProcessing(false);
+        if (isActive) {
+          setIsProcessing(false);
+        }
       }
     };
 
@@ -55,6 +62,7 @@ export function useProcessImage(refreshInterval = 5000) {
     interval = window.setInterval(checkAndProcessImages, refreshInterval);
 
     return () => {
+      isActive = false; // Mark as inactive
       if (interval) {
         window.clearInterval(interval);
       }
