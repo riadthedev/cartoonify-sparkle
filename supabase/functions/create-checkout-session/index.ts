@@ -23,17 +23,17 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     
-    // Get price IDs from environment variables
-    const regularPriceId = Deno.env.get('STRIPE_REGULAR_PRICE_ID');
-    const premiumPriceId = Deno.env.get('STRIPE_PREMIUM_PRICE_ID');
+    // Get product IDs from environment variables
+    const regularProductId = Deno.env.get('STRIPE_REGULAR_PRICE_ID');
+    const premiumProductId = Deno.env.get('STRIPE_PREMIUM_PRICE_ID');
     
     // Log environment variables (without exposing sensitive keys)
     console.log('Environment variables:', {
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseAnonKey: !!supabaseAnonKey,
       hasStripeSecretKey: !!stripeSecretKey,
-      hasRegularPriceId: !!regularPriceId,
-      hasPremiumPriceId: !!premiumPriceId
+      hasRegularProductId: !!regularProductId,
+      hasPremiumProductId: !!premiumProductId
     });
     
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -52,10 +52,10 @@ serve(async (req) => {
       );
     }
     
-    if (!regularPriceId || !premiumPriceId) {
-      console.error('Missing Stripe price IDs');
+    if (!regularProductId || !premiumProductId) {
+      console.error('Missing Stripe product IDs');
       return new Response(
-        JSON.stringify({ error: 'Stripe price IDs are missing from environment variables' }),
+        JSON.stringify({ error: 'Stripe product IDs are missing from environment variables' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -158,12 +158,12 @@ serve(async (req) => {
       );
     }
     
-    // Set price based on quality level
-    const priceId = qualityLevel === 'premium' ? premiumPriceId : regularPriceId;
+    // Set product based on quality level
+    const productId = qualityLevel === 'premium' ? premiumProductId : regularProductId;
     
     const originUrl = req.headers.get('origin') || 'https://your-app-fallback-url.com';
-    console.log('Creating checkout session with:', { 
-      priceId, 
+    console.log('Creating checkout session with product:', { 
+      productId, 
       imageId, 
       qualityLevel, 
       userId: user.id,
@@ -171,18 +171,25 @@ serve(async (req) => {
     });
     
     try {
-      // Create checkout session
+      // Create checkout session with direct product link
       const session = await stripe.checkout.sessions.create({
         customer_email: user.email,
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
+        // For direct product checkout, we'll use a different approach
         mode: 'payment',
         success_url: `${originUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}&image_id=${imageId}`,
         cancel_url: `${originUrl}/dashboard?canceled=true`,
+        line_items: [
+          {
+            // Note: For direct product IDs, we use a different approach
+            quantity: 1,
+            // Use the price_data object to reference the product directly
+            price_data: {
+              currency: 'usd',
+              product: productId,
+              unit_amount: qualityLevel === 'premium' ? 1000 : 200, // $10.00 or $2.00
+            }
+          },
+        ],
         metadata: {
           userId: user.id,
           imageId: imageId,
