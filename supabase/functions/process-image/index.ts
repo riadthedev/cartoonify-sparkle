@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
@@ -105,9 +106,9 @@ async function processWithGemini(imageResponse) {
   // Initialize the Google Generative AI SDK
   const genAI = new GoogleGenerativeAI(geminiApiKey);
   
-  // Use the image generation model with the updated model name
+  // Use the correct model name
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp-image-generation",
+    model: "gemini-1.5-pro",
   });
   
   // Get image data as bytes for Gemini
