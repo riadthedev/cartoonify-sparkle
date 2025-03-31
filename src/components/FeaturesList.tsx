@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Star, Zap, Download, PaintBrush } from 'lucide-react';
+import { Star, Zap, Download, Paintbrush } from 'lucide-react';
 
 const features = [
   {
-    icon: <PaintBrush className="w-10 h-10 text-toonify-cyan" />,
+    icon: <Paintbrush className="w-10 h-10 text-toonify-cyan" />,
     title: 'Multiple Cartoon Styles',
     description: 'Choose from various cartoon styles including anime, Pixar, comic book, and more.'
   },
