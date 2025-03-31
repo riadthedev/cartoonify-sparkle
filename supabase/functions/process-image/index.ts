@@ -23,8 +23,15 @@ serve(async (req) => {
     }
   );
   
+  // Parse the request body only once at the beginning
+  let imageId;
+  
   try {
-    const { imageId } = await req.json();
+    // Clone the request so we can use it multiple times if needed
+    const requestClone = req.clone();
+    const requestData = await requestClone.json();
+    imageId = requestData.imageId;
+    
     console.log('Processing image with ID:', imageId);
     
     // Get image data
@@ -193,16 +200,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing image:', error);
     
-    // Get the image ID from the request if possible
-    let imageId;
-    try {
-      const body = await req.json();
-      imageId = body.imageId;
-    } catch (e) {
-      // Ignore parsing errors
-    }
-    
-    // If we have an imageId, update the status to show the error
+    // If we have an imageId from the earlier parsing, update the status to show the error
     if (imageId) {
       try {
         await supabaseClient
