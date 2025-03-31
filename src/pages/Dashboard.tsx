@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -15,7 +14,7 @@ import {
   Trash2 
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL_EXPORT } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import {
   Select,
@@ -24,8 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { useProcessImage } from '@/hooks/useProcessImage';
 import ImageUploader from '@/components/ImageUploader';
 
@@ -156,8 +153,7 @@ const Dashboard: React.FC = () => {
     try {
       console.log('Starting checkout process for image:', imageId, 'with quality:', qualityLevel);
       
-      // Check if VITE_SUPABASE_URL is defined
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseUrl = SUPABASE_URL_EXPORT;
       console.log('Using Supabase URL:', supabaseUrl);
       
       if (!supabaseUrl) {
@@ -184,20 +180,18 @@ const Dashboard: React.FC = () => {
       });
       
       if (!response.ok) {
-        const errorData = await response.text();
+        const errorText = await response.text();
         console.error('Server response error:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorData
+          body: errorText
         });
         
-        // Try to parse as JSON if possible
         let errorMessage;
         try {
-          const errorJson = JSON.parse(errorData);
+          const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.error || errorJson.message || `Server responded with ${response.status}: ${response.statusText}`;
         } catch (parseError) {
-          // If not JSON, use the text directly
           errorMessage = `Server responded with ${response.status}: ${response.statusText}. Response was not valid JSON.`;
         }
         
