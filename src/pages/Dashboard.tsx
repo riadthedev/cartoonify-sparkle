@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
         .from('images')
         .getPublicUrl(filePath);
       
-      const { data: imageData, error: insertError } = await supabase
+      const { data: insertedImageData, error: insertError } = await supabase
         .from('user_images')
         .insert({
           user_id: user!.id,
@@ -330,7 +330,7 @@ const Dashboard: React.FC = () => {
                       <div className="rounded-xl border-2 border-dashed border-white/10 flex items-center justify-center aspect-square bg-white/5">
                         {image.status === 'in_queue' ? (
                           <div className="text-center p-4">
-                            <div className="animate-spin mb-2">
+                            <div className="mb-2">
                               <Sparkles className="h-8 w-8 text-toonify-pink" />
                             </div>
                             <p className="text-gray-300">Processing your image...</p>
