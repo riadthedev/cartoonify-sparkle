@@ -82,7 +82,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect }) => {
           />
           <label htmlFor="file-upload">
             <Button 
-              className="gradient-border blue-cyan-gradient"
+              className="bg-toonify-dark-navy border-2 border-toonify-blue text-white"
               variant="outline"
             >
               <ImageIcon className="mr-2 h-4 w-4" /> Select Image
@@ -103,7 +103,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect }) => {
               Reset
             </Button>
             <Button 
-              className="gradient-border purple-pink-gradient"
+              className="bg-toonify-dark-navy border-2 border-toonify-purple text-white"
               variant="outline"
             >
               <Sparkles className="mr-2 h-4 w-4" /> Toonify Me ✨

@@ -64,50 +64,6 @@
 }
 
 @layer components {
-  .gradient-border {
-    position: relative;
-    border-radius: 9999px;
-    overflow: hidden;
-    z-index: 1;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-  }
-
-  .gradient-border::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    z-index: -1;
-    border-radius: 9999px;
-    background: linear-gradient(90deg, var(--start-color), var(--end-color));
-  }
-
-  .blue-cyan-gradient::before {
-    --start-color: #4F7CFF;
-    --end-color: #2CE5F6;
-  }
-
-  .purple-pink-gradient::before {
-    --start-color: #8A4FFF;
-    --end-color: #FF4FC0;
-  }
-
-  .red-orange-gradient::before {
-    --start-color: #FF4F4F;
-    --end-color: #FF6B4F;
-  }
-
-  .gradient-border:hover {
-    transform: translateY(-2px);
-    transition: transform 0.3s ease;
-  }
-
-  .gradient-border:hover::before {
-    animation: rotate 2s linear infinite;
-  }
-
   .drop-zone {
     @apply border-2 border-dashed border-toonify-blue/40 rounded-3xl p-8 cursor-pointer 
     transition-all duration-300 flex flex-col items-center justify-center text-center;
@@ -129,9 +85,4 @@
   .cartoon-card:hover {
     @apply shadow-xl border-white/20 transform -translate-y-1;
   }
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
