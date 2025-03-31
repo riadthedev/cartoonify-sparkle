@@ -19,6 +19,20 @@ const safeJsonParse = (text) => {
   }
 };
 
+// Helper function to convert ArrayBuffer to base64 in chunks
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  // Process in chunks to avoid call stack issues
+  const chunkSize = 1024;
+  for (let i = 0; i < len; i += chunkSize) {
+    const chunk = bytes.slice(i, Math.min(i + chunkSize, len));
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return btoa(binary);
+}
+
 // Helper function to fetch image data from the database
 async function fetchImageData(supabaseClient, imageId) {
   console.log('Fetching image with ID:', imageId);
@@ -94,7 +108,10 @@ async function processWithGemini(imageResponse) {
   
   // Get image data as bytes for Gemini
   const imageBytes = await imageResponse.arrayBuffer();
-  const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
+  
+  // FIX: Use the chunked conversion function instead of spreading a large array
+  const base64Image = arrayBufferToBase64(imageBytes);
+  
   const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
   
   console.log('Sending request to Gemini API using SDK');

@@ -59,7 +59,7 @@ export function useProcessImage(refreshInterval = 5000) {
                 variant: "destructive",
               });
               
-              setError('Failed to process image: ' + response.error.message);
+              setError('Failed to process image: ' + (response.error.message || 'Unknown error'));
             } else {
               console.log('Process-image function completed successfully');
               toast({
