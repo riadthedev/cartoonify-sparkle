@@ -32,7 +32,6 @@ serve(async (req) => {
       .from('user_images')
       .select('*')
       .eq('id', imageId)
-      .eq('status', 'in_queue')
       .single();
     
     if (imageError || !imageData) {
@@ -70,83 +69,59 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
     
-    const toonifyPrompt = `Redraw this image exactly in the 2D animation style, strictly preserving the original content, composition, subject, pose, facial expression, clothing, and plain beige background.
+    const toonifyPrompt = `Create a cartoon version of this photo in a Studio Ghibli style. The new image should:
+- Maintain the exact same composition and framing as the original
+- Keep all subjects in the same positions and poses
+- Use soft lines, warm colors, and a hand-drawn animation aesthetic
+- Simplify details while preserving the distinctive features of the subject(s)
+- Apply gentle shading and painterly textures
+- Keep the same background but in a simplified, artistic style
 
-Do not add or change anything — no new objects, no new backgrounds, and no stylistic embellishments that were not present in the reference photo.
-
-The goal is a faithful recreation in hand-drawn style: soft lines, warm colors, painterly textures, and gentle shading — but everything else must remain true to the original image. avoid photo realism it should be in the cartoon anime form. ensure the background is as close to the original as possible, it should have studio ghibili art style`;
+The result should look like a high-quality 2D animation cell that could appear in a Studio Ghibli film.`;
 
     console.log('Sending request to Gemini API');
     
-    // Add exponential backoff for rate limiting
-    let retries = 0;
-    const maxRetries = 3;
-    let generationResult;
-    
-    while (retries <= maxRetries) {
-      try {
-        const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': geminiApiKey,
-          },
-          body: JSON.stringify({
-            contents: [
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': geminiApiKey,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: toonifyPrompt },
               {
-                role: 'user',
-                parts: [
-                  { text: toonifyPrompt },
-                  {
-                    inline_data: {
-                      mime_type: imageResponse.headers.get('content-type') || 'image/jpeg',
-                      data: base64Image
-                    }
-                  }
-                ]
+                inline_data: {
+                  mime_type: imageResponse.headers.get('content-type') || 'image/jpeg',
+                  data: base64Image
+                }
               }
-            ],
-            generation_config: {
-              temperature: 0.4,
-              topP: 0.95,
-              topK: 32
-            }
-          })
-        });
-        
-        if (!geminiResponse.ok) {
-          const errorText = await geminiResponse.text();
-          console.error('Gemini API error:', errorText);
-          
-          // If rate limited, wait and retry
-          if (geminiResponse.status === 429 && retries < maxRetries) {
-            const delay = Math.pow(2, retries) * 1000; // Exponential backoff
-            console.log(`Rate limited. Retrying in ${delay}ms (retry ${retries + 1}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            retries++;
-            continue;
+            ]
           }
-          
-          throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
+        ],
+        generation_config: {
+          temperature: 0.2,
+          topP: 0.95,
+          topK: 32
         }
-        
-        generationResult = await geminiResponse.json();
-        console.log('Received response from Gemini');
-        break; // Success, exit the retry loop
-      } catch (error) {
-        if (retries < maxRetries) {
-          const delay = Math.pow(2, retries) * 1000;
-          console.log(`Error, retrying in ${delay}ms (retry ${retries + 1}/${maxRetries}): ${error.message}`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          retries++;
-        } else {
-          throw error; // Rethrow after max retries
-        }
-      }
+      })
+    });
+    
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
     }
+    
+    const generationResult = await geminiResponse.json();
+    console.log('Received response from Gemini:', JSON.stringify(generationResult));
     
     // Extract the generated image
     if (!generationResult || !generationResult.candidates || !generationResult.candidates[0]?.content?.parts) {
+      console.error('Invalid response structure from Gemini API:', JSON.stringify(generationResult));
       throw new Error('Invalid response from Gemini API');
     }
     
@@ -154,12 +129,16 @@ The goal is a faithful recreation in hand-drawn style: soft lines, warm colors, 
       part => part.inline_data && part.inline_data.mime_type.startsWith('image/')
     );
     
-    if (!generatedImage) {
+    if (!generatedImage || !generatedImage.inline_data || !generatedImage.inline_data.data) {
+      console.error('No image found in Gemini response parts:', 
+        JSON.stringify(generationResult.candidates[0].content.parts));
       throw new Error('No image was generated by Gemini');
     }
     
     const toonifiedImage = generatedImage.inline_data.data;
     const mimeType = generatedImage.inline_data.mime_type;
+    
+    console.log('Successfully extracted toonified image, mime type:', mimeType);
     
     // Upload the generated image to storage
     const fileName = `toonified-${imageId}.${mimeType.split('/')[1] || 'jpg'}`;
