@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Download, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Sparkles, Download, Trash2, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ImageCardProps {
   image: any;
@@ -21,20 +22,69 @@ const ImageCard: React.FC<ImageCardProps> = ({
   onQualityChange,
   refreshImages 
 }) => {
+  const { toast } = useToast();
+  
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'complete':
         return { icon: <CheckCircle className="h-5 w-5 text-green-500 mr-2" />, text: 'Complete' };
       case 'in_queue':
-        return { icon: <Clock className="h-5 w-5 text-yellow-500 mr-2" />, text: 'Processing' };
+        return { icon: <Clock className="h-5 w-5 text-yellow-500 mr-2" />, text: 'In Queue' };
       case 'processing':
         return { icon: <Clock className="h-5 w-5 text-yellow-500 mr-2" />, text: 'Generating' };
       case 'not_toonified':
         return { icon: <AlertCircle className="h-5 w-5 text-gray-400 mr-2" />, text: 'Not Toonified' };
       case 'pending_payment':
         return { icon: <AlertCircle className="h-5 w-5 text-gray-400 mr-2" />, text: 'Payment Required' };
+      case 'error':
+        return { icon: <AlertCircle className="h-5 w-5 text-red-500 mr-2" />, text: 'Error' };
       default:
         return { icon: <AlertCircle className="h-5 w-5 text-gray-400 mr-2" />, text: status };
+    }
+  };
+
+  const handleRetry = async () => {
+    try {
+      // Update the status back to 'in_queue'
+      await supabase
+        .from('user_images')
+        .update({
+          status: 'in_queue',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', image.id);
+      
+      // Call the process-image function
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+      
+      toast({
+        title: "Processing restarted",
+        description: "Your image is now in queue for processing again.",
+      });
+      
+      // Refresh images
+      refreshImages();
+      
+      // Call process-image function
+      const response = await supabase.functions.invoke('process-image', {
+        body: { imageId: image.id },
+      });
+      
+      if (response.error) {
+        console.error('Error starting image processing:', response.error);
+      }
+    } catch (error) {
+      console.error('Error retrying image processing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to restart processing. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -119,6 +169,22 @@ const ImageCard: React.FC<ImageCardProps> = ({
                 className="h-2 bg-white/10" 
               />
               <p className="text-xs text-gray-400 mt-2">This may take a minute</p>
+            </div>
+          ) : image.status === 'error' ? (
+            <div className="text-center p-4 w-full">
+              <div className="mb-4">
+                <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
+              </div>
+              <p className="text-gray-300 mb-3">
+                There was an error processing your image
+              </p>
+              <Button 
+                onClick={handleRetry}
+                className="bg-toonify-dark-navy border-2 border-toonify-purple text-white mt-2"
+                variant="outline"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+              </Button>
             </div>
           ) : (
             <div className="text-center w-full p-4">

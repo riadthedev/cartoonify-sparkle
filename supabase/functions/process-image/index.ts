@@ -56,6 +56,10 @@ serve(async (req) => {
 
     // Get the original image as base64
     const imageResponse = await fetch(imageData.original_image_path);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch original image: ${imageResponse.status} ${imageResponse.statusText}`);
+    }
+    
     const imageArrayBuffer = await imageResponse.arrayBuffer();
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageArrayBuffer)));
     const base64EncodedImage = `data:${imageResponse.headers.get('content-type') || 'image/jpeg'};base64,${base64Image}`;
@@ -74,45 +78,78 @@ The goal is a faithful recreation in hand-drawn style: soft lines, warm colors, 
 
     console.log('Sending request to Gemini API');
     
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': geminiApiKey,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: toonifyPrompt },
-              {
-                inline_data: {
-                  mime_type: imageResponse.headers.get('content-type') || 'image/jpeg',
-                  data: base64Image
-                }
-              }
-            ]
-          }
-        ],
-        generation_config: {
-          temperature: 0.4,
-          topP: 0.95,
-          topK: 32
-        }
-      })
-    });
+    // Add exponential backoff for rate limiting
+    let retries = 0;
+    const maxRetries = 3;
+    let generationResult;
     
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
+    while (retries <= maxRetries) {
+      try {
+        const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiApiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: toonifyPrompt },
+                  {
+                    inline_data: {
+                      mime_type: imageResponse.headers.get('content-type') || 'image/jpeg',
+                      data: base64Image
+                    }
+                  }
+                ]
+              }
+            ],
+            generation_config: {
+              temperature: 0.4,
+              topP: 0.95,
+              topK: 32
+            }
+          })
+        });
+        
+        if (!geminiResponse.ok) {
+          const errorText = await geminiResponse.text();
+          console.error('Gemini API error:', errorText);
+          
+          // If rate limited, wait and retry
+          if (geminiResponse.status === 429 && retries < maxRetries) {
+            const delay = Math.pow(2, retries) * 1000; // Exponential backoff
+            console.log(`Rate limited. Retrying in ${delay}ms (retry ${retries + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            retries++;
+            continue;
+          }
+          
+          throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
+        }
+        
+        generationResult = await geminiResponse.json();
+        console.log('Received response from Gemini');
+        break; // Success, exit the retry loop
+      } catch (error) {
+        if (retries < maxRetries) {
+          const delay = Math.pow(2, retries) * 1000;
+          console.log(`Error, retrying in ${delay}ms (retry ${retries + 1}/${maxRetries}): ${error.message}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          retries++;
+        } else {
+          throw error; // Rethrow after max retries
+        }
+      }
     }
     
-    const generationResult = await geminiResponse.json();
-    console.log('Received response from Gemini');
-    
     // Extract the generated image
+    if (!generationResult || !generationResult.candidates || !generationResult.candidates[0]?.content?.parts) {
+      throw new Error('Invalid response from Gemini API');
+    }
+    
     const generatedImage = generationResult.candidates[0].content.parts.find(
       part => part.inline_data && part.inline_data.mime_type.startsWith('image/')
     );
@@ -169,6 +206,31 @@ The goal is a faithful recreation in hand-drawn style: soft lines, warm colors, 
     );
   } catch (error) {
     console.error('Error processing image:', error);
+    
+    // Get the image ID from the request if possible
+    let imageId;
+    try {
+      const body = await req.json();
+      imageId = body.imageId;
+    } catch (e) {
+      // Ignore parsing errors
+    }
+    
+    // If we have an imageId, update the status to show the error
+    if (imageId) {
+      try {
+        await supabaseClient
+          .from('user_images')
+          .update({
+            status: 'error',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', imageId);
+      } catch (updateError) {
+        console.error('Error updating image status after failure:', updateError);
+      }
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
