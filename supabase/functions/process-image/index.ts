@@ -100,49 +100,40 @@ async function processWithGemini(imageResponse) {
 
   console.log("Initializing Google Generative AI with API key");
 
-  // Initialize the Gemini API client
+  // Initialize the Gemini API client following the example
   const genAI = new GoogleGenerativeAI(geminiApiKey);
-  
-  // Check if the model exists and log available models
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  console.log("Successfully initialized Gemini model");
 
   // Get image data as bytes for Gemini
   const imageBytes = await imageResponse.arrayBuffer();
   const base64Image = arrayBufferToBase64(imageBytes);
   const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
-  // Create a FileObject for the Gemini API
-  const imageData = {
-    mimeType: mimeType,
-    data: base64Image
-  };
+  // Prepare the content parts as shown in the example
+  const contents = [
+    { text: "Generate an image that is a Studio Ghibli style cartoon version of the provided photo." },
+    {
+      inlineData: {
+        mimeType: mimeType,
+        data: base64Image
+      }
+    }
+  ];
 
   console.log("Sending request to Gemini API using SDK");
 
   try {
-    // Generate content using the correct Gemini API structure
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: "Generate an image that is a Studio Ghibli style cartoon version of the provided photo." },
-            { inlineData: imageData }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "image/png",
+    // Generate content using the structure from the example
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.0-flash-exp-image-generation",
+      contents: contents,
+      config: {
+        responseModalities: ["Text", "Image"]
       }
     });
 
     console.log("Received response from Gemini API");
 
     // Extract the image from the response
-    const response = result.response;
-    
-    // Look for image in the response parts
     for (const part of response.candidates[0].content.parts) {
       if (part.inlineData && part.inlineData.mimeType.startsWith("image/")) {
         return {
